@@ -2,8 +2,9 @@
 ------------------------
 
 ------------------------
--- Version 1.56
+-- Version 1.57
 ------------------------
+-- * Some bugfixes and compatibility for EvoRTS
 -- * Bug fixes and performance improvements
 -- * Added TS values and better handling of screen position
 -- * Improved player list management and handling of dead players
