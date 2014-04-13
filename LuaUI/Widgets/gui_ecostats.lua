@@ -1128,8 +1128,15 @@ function widget:UnitTaken(unitID, unitDefID, unitTeam, newTeam)
 end
 
 function widget:UnitGiven(unitID, unitDefID, unitTeam, oldTeam)
-	local newteam = teamData[unitTeam]["allyID"]
-	local oldteam = teamData[oldTeam]["allyID"]
+	local newteam, oldteam
+	if teamData[newTeam] then
+		newteam = teamData[unitTeam]["allyID"]
+	end
+	
+	if teamData[oldTeam] then
+		oldteam = teamData[oldTeam]["allyID"]
+	end
+	
 	if newTeam ~= nil then UpdateTeam(newteam) end
 	if oldTeam ~= nil then UpdateTeam(oldteam) end
 end
