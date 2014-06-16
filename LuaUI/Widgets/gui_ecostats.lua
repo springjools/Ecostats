@@ -154,10 +154,10 @@ local glText            		 = gl.Text
 function widget:Initialize()
 	if not (Spring.GetSpectatingState() or isReplay) then
 		inSpecMode = false
-		Echo("Ecostats: widget loaded in active player mode")
+		Spring.Log("widget", LOG.INFO, "Ecostats: widget loaded in active player mode")
 	else
 		inSpecMode = true
-		Echo("Ecostats: widget loaded in spectator mode")
+		Spring.Log("widget", LOG.INFO, "Ecostats: widget loaded in spectator mode")
 	end
 	if Spring.GetGameSeconds() > 0 then gamestarted = true end
 	
@@ -267,7 +267,6 @@ function Init()
 	
 	local frame = Spring.GetGameFrame()
 	lastPlayerChange = frame
-
 	
 end
 
@@ -561,13 +560,13 @@ function UpdateTeam(teamID)
 	end
 end
 
-function setPlayerTable(pID)
+function setPlayerTable(teamID)
 	
 	local side, tID, isDead, commanderAlive, minc, einc, kills, losses, x, y, kills2, losses2, leaderName, leaderID, active, unitCount, spectator, country, rank
-	_,leaderID,isDead,isAI,side,tID,_,_ 	= Spring.GetTeamInfo(pID)
+	_,leaderID,isDead,isAI,side,tID,_,_ 	= Spring.GetTeamInfo(teamID)
 	leaderName,active,spectator,_,_,_,_,country,rank	= Spring.GetPlayerInfo(leaderID)
 	
-	local tred, tgreen, tblue = Spring.GetTeamColor(pID)
+	local tred, tgreen, tblue = Spring.GetTeamColor(teamID)
 	local luminance  = (tred * 0.299) + (tgreen * 0.587) + (tblue * 0.114)
 	if (luminance < 0.2) then
 		tred = tred + 0.25
@@ -575,53 +574,57 @@ function setPlayerTable(pID)
 		tblue = tblue + 0.25
 	end
 	
-	kills2,losses2 				= Spring.GetTeamUnitStats(pID)
-	_,_,_,minc 					= Spring.GetTeamResources(pID,"metal")
-	_,_,_,einc 					= Spring.GetTeamResources(pID,"energy")
-	x,_,y 						= Spring.GetTeamStartPosition(pID)
-	commanderAlive 				= checkCommander(pID)
-	kills 						= killCounters[pID]
-	losses 						= lossCounters[pID]
-	killedhp 					= killedHP[pID]
-	losthp 						= lostHP[pID]
-	unitCount 					= Spring.GetTeamUnitCount(pID)
+	kills2,losses2 				= Spring.GetTeamUnitStats(teamID)
+	_,_,_,minc 					= Spring.GetTeamResources(teamID,"metal")
+	_,_,_,einc 					= Spring.GetTeamResources(teamID,"energy")
+	x,_,y 						= Spring.GetTeamStartPosition(teamID)
+	commanderAlive 				= checkCommander(teamID)
+	kills 						= killCounters[teamID]
+	losses 						= lossCounters[teamID]
+	killedhp 					= killedHP[teamID]
+	losthp 						= lostHP[teamID]
+	unitCount 					= Spring.GetTeamUnitCount(teamID)
 	if Game.gameShortName == "EvoRTS" then side = "outer_colonies" end
 	
-	if not teamData[pID] then teamData[pID] = {} end
+	local startUnitDefID = Spring.GetTeamRulesParam(teamID, 'startUnit')
+	local cp = ((startUnitDefID and UnitDefs[startUnitDefID]) and UnitDefs[startUnitDefID].customParams) or nil
+	if cp and cp.side then side = cp.side end
+		
+	if not teamData[teamID] then teamData[teamID] = {} end
 	
-	teamData[pID]["playerID"] 		= pID
-	teamData[pID]["allyID"] 		= tID
-	teamData[pID]["red"]			= tred
-	teamData[pID]["green"]			= tgreen
-	teamData[pID]["blue"]			= tblue
-	teamData[pID]["startx"]			= x
-	teamData[pID]["starty"]			= y
-	teamData[pID]["side"]			= side
-	teamData[pID]["isDead"] 		= isDead
-	teamData[pID]["hasCom"]			= commanderAlive
-	teamData[pID]["minc"]			= minc
-	teamData[pID]["einc"] 			= einc
-	teamData[pID]["kills"]			= kills
-	teamData[pID]["losses"]			= losses
-	teamData[pID]["kills2"]			= kills2
-	teamData[pID]["losses2"]		= losses2
-	teamData[pID]["killedhp"]		= killedhp
-	teamData[pID]["losthp"]			= losthp
-	teamData[pID]["leaderID"]		= leaderID
-	teamData[pID]["leaderName"]		= leaderName
-	teamData[pID]["active"]			= active
-	teamData[pID]["spectator"]		= spectator
-	teamData[pID]["unitCount"]		= unitCount
-	teamData[pID]["country"]		= country
-	teamData[pID]["rank"]			= rank
-	teamData[pID]["isAI"]			= isAI
-	setPlayerFP(pID)
-	setPlayerBP(pID)
-	teamData[pID]["skill"]			= GetSkill(pID)
+	teamData[teamID]["playerID"] 		= teamID
+	teamData[teamID]["allyID"] 			= tID
+	teamData[teamID]["red"]				= tred
+	teamData[teamID]["green"]			= tgreen
+	teamData[teamID]["blue"]			= tblue
+	teamData[teamID]["startx"]			= x
+	teamData[teamID]["starty"]			= y
+	teamData[teamID]["side"]			= side
+	teamData[teamID]["isDead"] 			= isDead
+	teamData[teamID]["hasCom"]			= commanderAlive
+	teamData[teamID]["minc"]			= minc
+	teamData[teamID]["einc"] 			= einc
+	teamData[teamID]["kills"]			= kills
+	teamData[teamID]["losses"]			= losses
+	teamData[teamID]["kills2"]			= kills2
+	teamData[teamID]["losses2"]			= losses2
+	teamData[teamID]["killedhp"]		= killedhp
+	teamData[teamID]["losthp"]			= losthp
+	teamData[teamID]["leaderID"]		= leaderID
+	teamData[teamID]["leaderName"]		= leaderName
+	teamData[teamID]["active"]			= active
+	teamData[teamID]["spectator"]		= spectator
+	teamData[teamID]["unitCount"]		= unitCount
+	teamData[teamID]["country"]			= country
+	teamData[teamID]["rank"]			= rank
+	teamData[teamID]["isAI"]			= isAI
+	setPlayerFP(teamID)
+	setPlayerBP(teamID)
+	teamData[teamID]["skill"]			= GetSkill(teamID)
 end
 
 function setAllyData(allyID)
-	if allyID == gaiaAllyID then return end
+	if not allyID or allyID == gaiaAllyID then return end
 	local id = allyID + 1
 	
 	local playerList = Spring.GetTeamList(allyID)
@@ -1016,15 +1019,11 @@ function updateButtons()
 			y1 = widgetPosY + widgetHeight - (drawpos)*tH - w1 - 3 
 			y2 = y1 + w1
 			
-			--Echo("IB1",allyID,infoButton[allyID])
-			
 			infoButton[allyID]["x1"] 		= x1
 			infoButton[allyID]["y1"] 		= y1
 			infoButton[allyID]["x2"] 		= x2
 			infoButton[allyID]["y2"] 		= y2
 			
-			--Echo("IB2",allyID,infoButton[allyID].y1)
-
 			local x3, y3, x4, y4
 			local w2 = 18
 			
@@ -1107,7 +1106,7 @@ function widget:UnitFinished(unitID, unitDefID, teamID)
 	if teamData[teamID] then
 		team = teamData[teamID]["allyID"]
 		if teamID ~= nil and isUnitComplete(unitID) then
-			--Echo("Unit is finished. Parameters:",unitID, unitDefID, teamID)
+			
 			UpdateTeam(team)
 		end
 	end
@@ -1146,11 +1145,11 @@ function widget:UnitDestroyed(u,ud,ut,a,ad,at) --unitID, unitDefID, teamID, atta
 	
 	local uteam, ateam
 	a = Spring.GetUnitLastAttacker(u)
-	--Echo("Unit attacker",a)
+	
 	if a then at = Spring.GetUnitTeam(a) end
 	if ut and teamData[ut] then
 		uteam = teamData[ut]["allyID"]
-		--Echo("Unit is destroyed!. Parameters:",ut,at)
+		
 		UpdateTeam(uteam)
 	end
 
@@ -1542,14 +1541,17 @@ function widget:MousePress(x, y, button)
 								local cx, cy, cz
 								local camState = Spring.GetCameraState()
 								cx, cy, cz = Spring.GetUnitPosition(com)
-				
-								if camState and cx then
+																
+								if camState and cx and Game.gameShortName ~= "EvoRTS" then
 									camState["px"] = cx
 									camState["py"] = cy
 									camState["pz"] = cz
 									camState["height"] = 800
-									Spring.SetCameraState(camState,2)
+									
+									Spring.SetCameraState(camState,0.75)
 									if inSpecMode then Spring.SelectUnitArray({com}) end
+								elseif cx then
+									Spring.SetCameraTarget(cx,cy,cz,0.5)
 								end
 							end
 						elseif not ctrlDown then
@@ -1557,12 +1559,14 @@ function widget:MousePress(x, y, button)
 							local sz = teamData[teamID].starty
 							local sy = Spring.GetGroundHeight(sx,sz)
 							local camState = Spring.GetCameraState()
-							if camState and sx and sz and sx > 0 and sz > 0 then
+							if camState and sx and sz and sx > 0 and sz > 0 and Game.gameShortName ~= "EvoRTS" then
 								camState["px"] = sx
 								camState["py"] = sy
 								camState["pz"] = sz
 								camState["height"] = 5000
 								Spring.SetCameraState(camState,2)
+							elseif sx then
+								Spring.SetCameraTarget(sx,sy,sz,0.5)
 							end
 						end
 					end
@@ -1870,7 +1874,7 @@ function drawStandard()
 					
 				-- Expanded table
 				if infoButton[aID]["click"] then
-					--Echo("ET:",aID)
+					
 					DrawExpandTable(aID)
 				end
 								
@@ -2037,7 +2041,7 @@ function DrawMText(numberM, vOffset)
 end
 
 function DrawEBar(tE,vOffset)-- where tE = team Energy = [0,1]
-	--Echo("Drawing E Bar:",tE)
+	
 	local dx = 15
 	local dy = tH-35
 	gl.Color(0.3,0.3,0.3)
@@ -2278,7 +2282,7 @@ function DrawKillDeathText(kills, losses, vOffset)
 	else
 		if not options["kills1"]["On"] then return end
 	end
-	--Echo("K/L:",kills, losses, vOffset)
+	
 	local dx = 6
 	local dy = 68
 	--local len = 1+math.floor(1+math.log(kills+1)+math.log(losses+1))
