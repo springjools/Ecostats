@@ -120,6 +120,7 @@ local myFontBig	 		= gl.LoadFont(font2Path,textlarge,5,40)
 local images			= {
 						["arm"]					= "LuaUI/Images/ecostats/arm_default.png",
 						["core"]     			= "LuaUI/Images/ecostats/core_default.png",
+						["tll"]				= "LuaUI/Images/ecostats/tll_default.png",
 						["contrast"]			= "LuaUI/Images/ecostats/contrast.png",
 						["borderson"]			= "LuaUI/Images/ecostats/borders.png",
 						["bordersoff"]			= "LuaUI/Images/ecostats/bordersOff.png",
