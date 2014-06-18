@@ -1,17 +1,19 @@
-local versionNumber = "1.57"
+local versionNumber = "1.59"
 ---------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------------------------------------------
 -- Changelog
 
 ------------------------
--- Version 1.57
+-- Version 1.59
 ------------------------
 -- * Some bugfixes and compatibility for EvoRTS
 -- * Bug fixes and performance improvements
 -- * Added TS values and better handling of screen position
 -- * Improved player list management and handling of dead players
 -- * Fixed bug where team bars disappear even if team is alive
+-- * Added icon for tech annihilation TTL faction
+-- * Added support for zombie mode (tested with XTA to detect mod option)
 
 ------------------------
 -- Version 1.5
@@ -105,6 +107,7 @@ local textlarge						= 18
 local gaiaID						= Spring.GetGaiaTeamID()
 local gaiaAllyID					= select(6,Spring.GetTeamInfo(gaiaID))
 local LIMITSPEED					= 2.0 -- gamespseed under which to fully update dynamic graphics
+local haveZombies 					= (tonumber((Spring.GetModOptions() or {}).zombies) or 0) == 1
 
 ---------------------------------------------------------------------------------------------------
 local announcingOn = true
@@ -134,6 +137,7 @@ local images			= {
 						["arrowright"]			= "LuaUI/Images/ecostats/arrowR.png",
 						["info"]				= "LuaUI/Images/ecostats/info.png",
 						["dead"]     			= "LuaUI/Images/ecostats/cross.png",
+						["zombie"]     			= "LuaUI/Images/ecostats/cross_inv.png",
 						["outer_colonies"]		= LUAUI_DIRNAME .. "Images/ecostats/ecommander.png",
 						}
 			
@@ -213,7 +217,7 @@ function Init()
 	end 
 	
 	for _,teamID in ipairs(Spring.GetTeamList()) do
-		if teamID ~= gaiaID then
+		if teamID ~= gaiaID or haveZombies then
 			killCounters[teamID] = 0
 			lossCounters[teamID] = 0
 			killedHP[teamID] = 0
@@ -241,7 +245,7 @@ function Init()
 	
 	local allyList = Spring.GetAllyTeamList()
 	for _,allyID in ipairs (allyList) do
-		if allyID ~= gaiaAllyID then
+		if allyID ~= gaiaAllyID or haveZombies then
 			setAllyData(allyID)		
 			local nbPlayers 						= getNbPlayers(allyID)
 			infoButton[allyID]						= {}
@@ -257,6 +261,7 @@ function Init()
 			Teambutton["Prev"][allyID]["click"] 	= false
 			iPanel[allyID]							= false
 		end
+		
 	end
 	updateButtons()
 	UpdateTeams()
@@ -514,7 +519,7 @@ end
 
 function UpdateAllPlayers()
 	for _,teamID in ipairs(Spring.GetTeamList()) do
-		if teamID ~= gaiaID then
+		if teamID ~= gaiaID or haveZombies then
 			if inSpecMode then
 				setPlayerTable(teamID)
 			else
@@ -565,6 +570,13 @@ function setPlayerTable(teamID)
 	local side, tID, isDead, commanderAlive, minc, einc, kills, losses, x, y, kills2, losses2, leaderName, leaderID, active, unitCount, spectator, country, rank
 	_,leaderID,isDead,isAI,side,tID,_,_ 	= Spring.GetTeamInfo(teamID)
 	leaderName,active,spectator,_,_,_,_,country,rank	= Spring.GetPlayerInfo(leaderID)
+	if teamID == gaiaID then
+		if haveZombies then 
+			leaderName = "(Zombie)"
+		else
+			leaderName = "(Gaia)"
+		end
+	end
 	
 	local tred, tgreen, tblue = Spring.GetTeamColor(teamID)
 	local luminance  = (tred * 0.299) + (tgreen * 0.587) + (tblue * 0.114)
@@ -624,14 +636,16 @@ function setPlayerTable(teamID)
 end
 
 function setAllyData(allyID)
-	if not allyID or allyID == gaiaAllyID then return end
+	if not allyID or (allyID == gaiaAllyID and not haveZombies) then return end
 	local id = allyID + 1
+	
+	
 	
 	local playerList = Spring.GetTeamList(allyID)
 	
 	if #playerList > 0 and isTeamAlive(allyID) then
 		for _,tID in ipairs (playerList) do
-			if tID ~= gaiaID then
+			if tID ~= gaiaID or haveZombies then
 				setPlayerTable(tID)
 			end
 		end
@@ -660,6 +674,7 @@ function setAllyData(allyID)
 		allyData[id]["tBP"]				= getTeamSum(allyID,"buildpower")
 		allyData[id]["tBPA"]			= getTeamSum(allyID,"buildpowerAir")
 		allyData[id]["aID"]				= allyID
+		
 	else
 		if options["removeDead"]["On"] then
 			allyData[id] = nil
@@ -673,7 +688,7 @@ function getTeamSum(allyID,param)
 	local teamList = Spring.GetTeamList(allyID)
 		
 	for _,tID in ipairs (teamList) do
-		if tID ~= gaiaID then
+		if tID ~= gaiaID or haveZombies then
 			tValue = tValue + (teamData[tID][param] or 0)
 		end
 	end
@@ -856,7 +871,7 @@ function setPlayerResources()
 			data["tM"] = 0
 			data["tE"] = 0
 			for _, teamID in ipairs (Spring.GetTeamList(allyID)) do
-				if teamID ~= gaiaID then
+				if teamID ~= gaiaID or haveZombies then
 					minc = select(4,Spring.GetTeamResources(teamID,"metal")) or 0
 					einc = select(4,Spring.GetTeamResources(teamID,"energy")) or 0
 					teamData[teamID]["minc"] = minc
@@ -872,7 +887,7 @@ function setPlayerResources()
 		data["tM"] = 0
 		data["tE"] = 0
 		for _, teamID in ipairs (Spring.GetTeamList(allyID)) do
-			if teamID ~= gaiaID then
+			if teamID ~= gaiaID or haveZombies then
 				minc = select(4,Spring.GetTeamResources(teamID,"metal")) or 0
 				einc = select(4,Spring.GetTeamResources(teamID,"energy")) or 0
 				teamData[teamID]["minc"] = minc
@@ -990,7 +1005,7 @@ function updateButtons()
 	for _, data in pairs(allyData) do
 		local allyID = data.aID
 		
-		if allyID ~= gaiaAllyID then 
+		if allyID ~= gaiaAllyID or haveZombies then 
 			
 			local w1 = 14
 			local x1, y1, x2, y2
@@ -1428,7 +1443,7 @@ function widget:MousePress(x, y, button)
 		for _,data in pairs (allyData) do
 			local allyID = data.aID
 			local allyDataID = allyID+1
-			if allyID ~= gaiaAllyID then				
+			if allyID ~= gaiaAllyID or haveZombies then				
 				nbPlayers = getNbPlayers(allyID)
 				
 				-- info-button
@@ -1520,7 +1535,7 @@ function widget:MousePress(x, y, button)
 		
 		-- main widget buttons
 		for _,teamID in ipairs (playerlist) do
-			if teamID ~= gaiaID and not teamData[teamID].isDead then
+			if (teamID ~= gaiaID or haveZombies) and not teamData[teamID].isDead then
 				local allyID = teamData[teamID].allyID
 				
 				if isTeamReal(allyID) and (allyID == Spring.GetMyAllyTeamID() or inSpecMode)then			
@@ -1590,7 +1605,7 @@ function widget:MousePress(x, y, button)
 		for _,data in pairs (allyData) do
 			local allyID = data.aID
 			
-			if allyID ~= gaiaAllyID then
+			if allyID ~= gaiaAllyID or haveZombies then
 				w = 180 + cW*getNbPlayers(allyID)
 				
 				x5 = iPosX[allyID]
@@ -1649,7 +1664,7 @@ function widget:IsAbove(x, y)
 	
 	--player faction button
 	for _,teamID in ipairs (playerlist) do
-		if teamID ~= gaiaID then
+		if teamID ~= gaiaID or haveZombies then
 			x5 = playerButton[teamID]["x1"]
 			x6 = playerButton[teamID]["x2"]
 			y5 = playerButton[teamID]["y1"]
@@ -1668,7 +1683,7 @@ function widget:IsAbove(x, y)
 	
 	--team infobutton
 	for _,allyID in ipairs (allyList) do
-		if allyID ~= gaiaAllyID then
+		if allyID ~= gaiaAllyID or haveZombies then
 				
 			x1 = infoButton[allyID]["x1"]
 			x2 = infoButton[allyID]["x2"]
@@ -1729,7 +1744,7 @@ function widget:IsAbove(x, y)
 	end
 	
 	for _,allyID in ipairs (allyList) do
-		if allyID ~= gaiaAllyID then
+		if allyID ~= gaiaAllyID or haveZombies then
 			if IsOnButton(x,y, InfotablePosX, InfotablePosY-infoTableHeight, InfotablePosX + w, InfotablePosY) and infoButton[allyID]["click"] then
 				iPanel[allyID] = true
 			else
@@ -1783,7 +1798,7 @@ function drawDynamic()
 			local aID = data.aID
 			local drawpos = data.drawpos
 			
-			if isTeamReal(aID) and (aID == Spring.GetMyAllyTeamID() or inSpecMode) and aID ~= gaiaAllyID then
+			if isTeamReal(aID) and (aID == Spring.GetMyAllyTeamID() or inSpecMode) and (aID ~= gaiaAllyID or haveZombies) then
 				
 				local posy = tH*(drawpos)
 				local label, isAlive, hasCom
@@ -1805,7 +1820,7 @@ function drawDynamic()
 				
 				-- Player faction images
 				for i, tID  in ipairs (teamList) do
-					if tID ~= gaiaID then
+					if tID ~= gaiaID or haveZombies then
 						
 						local tData = teamData[tID]
 						local r = tData.red or 1
@@ -1814,8 +1829,10 @@ function drawDynamic()
 						local alpha, sideImg
 						local side = tData.side
 						local posx = WBadge*(i-1)
-						
+						local isZombie = haveZombies and tID == gaiaID
 						sideImg = images[side] or images["default"]
+						if isZombie then sideImg = images["zombie"] end
+						
 						data["isAlive"] = not tData.isDead
 						hasCom = tData.hasCom
 										
@@ -1828,14 +1845,15 @@ function drawDynamic()
 								end						
 								
 								if hasCom then
-									DrawSideImage(sideImg,posx,posy, r, g, b,alpha,false,playerButton[tID]["mouse"],t, false)--big icon	
+									DrawSideImage(sideImg,posx,posy, r, g, b,alpha,false,playerButton[tID]["mouse"],t, false,isZombie)--big icon	
 								else
-									DrawSideImage(sideImg,posx,posy, r, g, b,alpha,true,playerButton[tID]["mouse"],t, false) --small icon
+									DrawSideImage(sideImg,posx,posy, r, g, b,alpha,true,playerButton[tID]["mouse"],t, false,isZombie) --small icon
 								end
 							else
 								alpha = 0.8
 								sideImg = images["dead"]
-								DrawSideImage(sideImg,posx,posy, r, g, b,alpha,true,playerButton[tID]["mouse"],t, true) --dead, big icon
+								
+								DrawSideImage(sideImg,posx,posy, r, g, b,alpha,true,playerButton[tID]["mouse"],t, true,isZombie) --dead, big icon
 							end
 						else
 							DrawBox( posx, posy, r, g, b)
@@ -1870,7 +1888,7 @@ function drawStandard()
 		for _, data in pairs(allyData) do
 			local aID = data.aID
 			
-			if isTeamReal(aID) and (aID == Spring.GetMyAllyTeamID() or inSpecMode) and aID ~= gaiaAllyID then
+			if isTeamReal(aID) and (aID == Spring.GetMyAllyTeamID() or inSpecMode) and (aID ~= gaiaAllyID or haveZombies) then
 					
 				-- Expanded table
 				if infoButton[aID]["click"] then
@@ -1905,7 +1923,7 @@ function drawStandard()
 			local aID = data.aID
 			local drawpos = data.drawpos
 			
-			if isTeamReal(aID) and (aID == Spring.GetMyAllyTeamID() or inSpecMode) and aID ~= gaiaAllyID then
+			if isTeamReal(aID) and (aID == Spring.GetMyAllyTeamID() or inSpecMode) and (aID ~= gaiaAllyID or haveZombies) then
 				
 				if not data["isAlive"] then
 					data["isAlive"] = isTeamAlive(aID)
@@ -2605,7 +2623,7 @@ function DrawExpandTable(teamID)
 				local xi, yi, hi
 				local enemy = kMat[pID][rank][1] -- the associated player with rank is the actual player id that we want to plot
 				
-				if enemy ~= gaiaID then
+				if enemy ~= gaiaID or haveZombies then
 					r2 = teamData[enemy].red or 0
 					g2 = teamData[enemy].green or 0
 					b2 = teamData[enemy].blue or 0
@@ -3043,7 +3061,7 @@ function DrawBox(hOffset, vOffset,r,g,b)
 	gl.Color(1,1,1,1)
 end
 
-function DrawSideImage(sideImage, hOffset, vOffset, r, g, b, a, small, mouseOn,t,isDead)
+function DrawSideImage(sideImage, hOffset, vOffset, r, g, b, a, small, mouseOn,t,isDead,isZombie)
 	local w
 	local h
 	local dx
@@ -3062,6 +3080,12 @@ function DrawSideImage(sideImage, hOffset, vOffset, r, g, b, a, small, mouseOn,t
 	end
 	
 	if not inSpecMode then dx = dx -10 end
+	
+	if isZombie then
+		r = 1
+		g = 1
+		b = 1
+	end
 	
 	if mouseOn and (not isDead) then
 		if ctrlDown then
