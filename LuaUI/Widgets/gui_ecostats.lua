@@ -1105,11 +1105,11 @@ function widget:PlayerChanged(playerID)
 	local frame = Spring.GetGameFrame()
 	lastPlayerChange = frame
 	if not (Spring.GetSpectatingState() or isReplay) then
-		if inSpecMode then Echo("Ecostats: widget now in active player mode.") end
+		if inSpecMode then Spring.Log("widget", LOG.INFO,"Ecostats: widget now in active player mode.") end
 		inSpecMode = false
 		UpdateTeams()
 	else
-		if not inSpecMode then Echo("Ecostats: widget now in spectator mode.") end
+		if not inSpecMode then Spring.Log("widget", LOG.INFO,"Ecostats: widget now in spectator mode.") end
 		inSpecMode = true
 		Reinit()
 	end
@@ -1229,11 +1229,11 @@ function widget:TeamDied(TeamID)
 	local frame = Spring.GetGameFrame()
 	lastPlayerChange = frame
 	if not (Spring.GetSpectatingState() or isReplay) then
-		if inSpecMode then Echo("Ecostats: widget now in active player mode.") end
+		if inSpecMode then Spring.Log("widget", LOG.INFO,"Ecostats: widget now in active player mode.") end
 		inSpecMode = false
 		UpdateTeams()
 	else
-		if not inSpecMode then Echo("Ecostats: widget now in spectator mode.") end
+		if not inSpecMode then Spring.Log("widget", LOG.INFO,"Ecostats: widget now in spectator mode.") end
 		inSpecMode = true
 		Reinit()
 	end	
