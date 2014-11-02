@@ -1,8 +1,14 @@
-local versionNumber = "1.59"
+local versionNumber = "1.6"
 ---------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------------------------------------------
 -- Changelog
+
+------------------------
+-- Version 1.6
+------------------------
+-- * Remove announcing of kills: most games have this already built in
+-- * Remove sounds
 
 ------------------------
 -- Version 1.59
@@ -110,10 +116,6 @@ local LIMITSPEED					= 2.0 -- gamespseed under which to fully update dynamic gra
 local haveZombies 					= (tonumber((Spring.GetModOptions() or {}).zombies) or 0) == 1
 
 ---------------------------------------------------------------------------------------------------
-local announcingOn = true
-local soundsOn = true -- set true if you want sounds
-local snd = "LuaUI/Sounds/ding.ogg" --path to sound file
-if snd == nil then soundsOn = false end
 
 local fontPath  		= "LuaUI/Fonts/ebrima.ttf" 
 local font2Path  		= "LuaUI/Fonts/ebrima.ttf"
@@ -336,8 +338,6 @@ function setDefaults()
 	options["widthDec"] = {}
 	options["heightInc"] = {}
 	options["heightDec"] = {}
-	options["Announce"] = {}
-	options["Announce"]["On"] = false
 	options["resText"] = {}
 	options["removeDead"] = {}
 	options["resText"]["On"] = true
@@ -350,45 +350,40 @@ function setDefaults()
 	expandLeft         	= true
 	right 				= true
 	tH					= 60
-	soundsOn 			= true
 end
 
 function widget:GetConfigData(data)      -- save
-	if options.Announce then
-		--Echo("Saving config data")
-		return {
-			vsx                = vsx,
-			vsy                = vsy,
-			widgetPosX         = widgetPosX,
-			widgetPosY         = widgetPosY,
-			widgetWidth		   = widgetWidth,
-			expandDown         = expandDown,
-			expandLeft         = expandLeft,
-			tH				   = tH,
-			announcingOn 	   = options.Announce.On,
-			removeDeadOn 	   = options.removeDead.On,
-			resTextOn 	   	   = options.resText.On,
-			soundsOn		   = soundsOn,
-			bordersOn 		   = options.borders.On,
-			contrast 		   = options.contrast,
-			disableOn		   = options.disable.On,
-			FPBar1On		   = options.FPBar1.On,
-			FPBar2On		   = options.FPBar2.On,
-			BPBar1On		   = options.BPBar1.On,
-			BPBar2On		   = options.BPBar2.On,
-			kills1On 		   = options.kills1.On,
-			kills2On 		   = options.kills2.On,
-			vsx                = vsx,
-			vsy                = vsy,
-			widgetPosX         = widgetPosX,
-			widgetPosY         = widgetPosY,
-			widgetWidth		   = widgetWidth,
-			expandDown         = expandDown,
-			expandLeft         = expandLeft,
-			right			   = right,
-			tH				   = tH,
-		}
-	end
+	--Echo("Saving config data")
+	return {
+		vsx                = vsx,
+		vsy                = vsy,
+		widgetPosX         = widgetPosX,
+		widgetPosY         = widgetPosY,
+		widgetWidth		   = widgetWidth,
+		expandDown         = expandDown,
+		expandLeft         = expandLeft,
+		tH				   = tH,
+		removeDeadOn 	   = options.removeDead.On,
+		resTextOn 	   	   = options.resText.On,
+		bordersOn 		   = options.borders.On,
+		contrast 		   = options.contrast,
+		disableOn		   = options.disable.On,
+		FPBar1On		   = options.FPBar1.On,
+		FPBar2On		   = options.FPBar2.On,
+		BPBar1On		   = options.BPBar1.On,
+		BPBar2On		   = options.BPBar2.On,
+		kills1On 		   = options.kills1.On,
+		kills2On 		   = options.kills2.On,
+		vsx                = vsx,
+		vsy                = vsy,
+		widgetPosX         = widgetPosX,
+		widgetPosY         = widgetPosY,
+		widgetWidth		   = widgetWidth,
+		expandDown         = expandDown,
+		expandLeft         = expandLeft,
+		right			   = right,
+		tH				   = tH,
+	}
 end
 
 function widget:SetConfigData(data)      -- load
@@ -417,8 +412,6 @@ function widget:SetConfigData(data)      -- load
 	options["widthDec"] = {}
 	options["heightInc"] = {}
 	options["heightDec"] = {}
-	options["Announce"] = {}
-	options["Announce"]["On"] = data.announcingOn or false
 	options["resText"] = {}
 	options["removeDead"] = {}
 	options["resText"]["On"] = data.resTextOn or false
@@ -431,7 +424,6 @@ function widget:SetConfigData(data)      -- load
 	expandDown         	= data.expandDown or expandDown
 	expandLeft         	= data.expandLeft or expandLeft
 	tH					= data.tH or tH
-	soundsOn 			= data.soundsOn or soundsOn
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -1206,10 +1198,6 @@ function widget:UnitDestroyed(u,ud,ut,a,ad,at) --unitID, unitDefID, teamID, atta
 			bestKills=killCounters[at]
 			if at~=bestTeam then
 				bestTeam=at
-				if options["Announce"]["On"] then
-					if soundsOn then Spring.PlaySoundFile(snd) end
-					Spring.SendMessage(friendlyName(bestTeam) .. " has taken the lead with " .. bestKills .. " kills.")
-				end
 			end
 		end
 	end
@@ -1316,9 +1304,6 @@ function widget:TweakMousePress(x, y, button)
 			
 		elseif IsOnButton(x, y, options["disable"]["x1"],options["disable"]["y1"],options["disable"]["x2"],options["disable"]["y2"]) then
 			options["disable"]["On"] = not options["disable"]["On"]
-			return true
-		elseif IsOnButton(x, y, options["Announce"]["x1"],options["Announce"]["y1"],options["Announce"]["x2"],options["Announce"]["y2"]) then
-			options["Announce"]["On"] = not options["Announce"]["On"]	
 			return true
 		elseif IsOnButton(x, y, options["FPBar1"]["x1"],options["FPBar1"]["y1"],options["FPBar1"]["x2"],options["FPBar1"]["y2"]) then
 			options["FPBar1"]["On"] = not options["FPBar1"]["On"]	
@@ -2771,11 +2756,6 @@ function DrawOptionRibbon()
 	options["kills2"]["y2"] = widgetPosY - 240
 	options["kills2"]["y1"] = widgetPosY - 240 - t
 	
-	options["Announce"]["x1"] = x0 + 220
-	options["Announce"]["x2"] = x0 + 220 + t
-	options["Announce"]["y2"] = widgetPosY - 120
-	options["Announce"]["y1"] = widgetPosY - 120 - t
-	
 	options["removeDead"]["x1"] = x0 + 220
 	options["removeDead"]["x2"] = x0 + 220 + t
 	options["removeDead"]["y2"] = widgetPosY - 140
@@ -2827,7 +2807,6 @@ function DrawOptionRibbon()
 	glText("Show buildpower bar:", x0+5, widgetPosY - 230,textsize)
 	glText("Show kills and losses:", x0+5, widgetPosY - 250,textsize)
 	glText("Show resource text:", x0+5, widgetPosY - 170,textsize)
-	glText("Announce kills:", x0+5, widgetPosY - 130,textsize)
 	glText("Remove dead teams:", x0+5, widgetPosY - 150,textsize)
 	glText("(Drag window to reposition)", x0+35, widgetPosY - 280,textsize)
 	gl.Color(1,1,1,1)
@@ -2908,19 +2887,7 @@ function DrawOptionRibbon()
 		options["kills2"]["x2"],
 		options["kills2"]["y2"]
 		)
-	
-	if options["Announce"]["On"] then
-		gl.Texture(images["checkboxon"])
-	else
-		gl.Texture(images["checkboxoff"])
-	end
-	gl.TexRect(
-		options["Announce"]["x1"],
-		options["Announce"]["y1"],
-		options["Announce"]["x2"],
-		options["Announce"]["y2"]
-		)
-	
+		
 	if options["resText"]["On"] then
 		gl.Texture(images["checkboxon"])
 	else
